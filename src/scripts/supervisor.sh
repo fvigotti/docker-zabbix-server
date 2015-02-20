@@ -14,6 +14,10 @@ getProcessStateFromId(){
     echo $( ps -o pid,state --pid $PROC_ID --no-headers | awk '{print $2}' )
 }
 
+zabbix_pre_start() {
+    chown zabbix /var/log/zabbix/
+}
+
 start_zabbix() {
 /usr/sbin/zabbix_server -c /etc/zabbix/zabbix_server.conf
 }
@@ -41,6 +45,7 @@ get_zabbix_pid(){
 cat $ZABBIX_PIDFILE
 } || {
 echo ${ZABBIX_PIDFILE}' is not a file' >&2
+ls -lav $(dirname $ZABBIX_PIDFILE) >&2
 }
 
 }
@@ -62,7 +67,7 @@ trap "clean_up SIGINT" SIGINT
 trap "clean_up SIGTERM" SIGTERM
 trap "clean_up SIGKILL" SIGKILL
 
-
+zabbix_pre_start
 start_zabbix
 
 

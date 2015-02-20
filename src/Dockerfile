@@ -24,8 +24,8 @@ ADD scripts /scripts
 RUN chmod +x /scripts/supervisor.sh && \
     chmod 640 /etc/zabbix/zabbix_server.conf && \
     chown root:zabbix /etc/zabbix/zabbix_server.conf
+
 #    && \
-#    mkdir /var/log/zabbix/ && chown zabbix /var/log/zabbix/
 
 
 
