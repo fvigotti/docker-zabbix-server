@@ -14,6 +14,9 @@ getProcessStateFromId(){
     echo $( ps -o pid,state --pid $PROC_ID --no-headers | awk '{print $2}' )
 }
 
+start_zabbix() {
+/usr/sbin/zabbix_server -c /etc/zabbix/zabbix_server.conf
+}
 
 checkPidExist() {
     local PID_TO_CHECK=$1
@@ -25,7 +28,7 @@ checkPidExist() {
     local ZOMBIE_PROCESS_STATE='Z'
     kill -0 $PID_TO_CHECK 1>/dev/null 2>&1
     if [[ $? -eq "0" ]]; then #process id exists
-        echo 'checking process state for id , '$PID_TO_CHECK' , state = '$( getProcessStateFromId $PID_TO_CHECK)'' >&2
+        #echo 'checking process state for id , '$PID_TO_CHECK' , state = '$( getProcessStateFromId $PID_TO_CHECK)'' >&2
         [[ $( getProcessStateFromId $PID_TO_CHECK) == "${ZOMBIE_PROCESS_STATE}" ]] && echo "false" || echo "true"
     else
         echo "false"
@@ -43,10 +46,12 @@ echo ${ZABBIX_PIDFILE}' is not a file' >&2
 }
 
 
+
 clean_up() {
 # Perform program exit housekeeping
-echo '[TRAPPED] '$1'closing program, pid =  '$$;
-kill -s $1 $(getProcessStateFromId)
+ZABBIX_PID=$(get_zabbix_pid)
+echo '[TRAPPED] '$1' , forwarding signal to zabbix pid '$ZABBIX_PID;
+kill -s $1 $ZABBIX_PID
 sleep 1
 exit 0
 }
@@ -58,13 +63,7 @@ trap "clean_up SIGTERM" SIGTERM
 trap "clean_up SIGKILL" SIGKILL
 
 
-#ZABBIX_PID=$(get_zabbix_pid)
-#echo 'waiting zabbix process to start pid: '$ZABBIX_PID   >&2
-#pidRunning=$( checkPidExist $ZABBIX_PID )
-#echo 'pidRunning = '$pidRunning   >&2
-
-
-#++ NB: there is a scope issue overwriting global variable from a until-loop ( so variables must be reassigned inside and outside of the loops)
+start_zabbix
 
 
 while true
@@ -76,7 +75,7 @@ do
     sleep 0.3
 done
 
-
+echo 'watching zabbix server status...'
 while true
 do
     ZABBIX_PID=$(get_zabbix_pid)
